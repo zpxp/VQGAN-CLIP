@@ -1,5 +1,4 @@
 import pandas as pd
-import math
 from pathlib import Path
 import re
 
@@ -917,6 +916,11 @@ def gen_image(args, getOutputName):
             i += 1
             pbar.update()
 
+    torch.cuda.empty_cache()
+
+
+def isNaN(num):
+    return num != num
 
 def loop_sheet(sheet_name):
     Path("imageoutput/{}".format(sheet_name)).mkdir(parents=True, exist_ok=True)
@@ -938,9 +942,9 @@ def loop_sheet(sheet_name):
         numiters = (row["NumIters"])
         lr = (row["LearnRate"])
         thisargs = argparse.Namespace(**vars(args))
-        if numiters and not math.isnan(numiters):
+        if numiters and not isNaN(numiters):
             thisargs.max_iterations = int(numiters)
-        if lr and not math.isnan(lr):
+        if lr and not isNaN(lr):
             thisargs.step_size = float(lr)
 
         card_dir_name = re.sub(r"[^a-zA-Z]+", "_",  row["Name"])
@@ -957,7 +961,7 @@ def loop_sheet(sheet_name):
                     ("Prompt2", row["Prompt2"]),
                     ("Prompt3", row["Prompt3"]),
                 ]:
-                    if prompt and modifier and not math.isnan(prompt) and not math.isnan(modifier):
+                    if prompt and modifier and not isNaN(prompt) and not isNaN(modifier):
                         def get_output_name(iter):
                             return "imageoutput/{}/{}/{}{}_{}.png".format(
                                 sheet_name, card_dir_name, name, copy, iter
