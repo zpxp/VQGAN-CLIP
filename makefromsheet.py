@@ -115,24 +115,6 @@ if args.cudnn_determinism:
 if not args.augments:
     args.augments = [["Af", "Pe", "Ji", "Er"]]
 
-# Split text prompts using the pipe character (weights are split later)
-if args.prompts:
-    # For stories, there will be many phrases
-    story_phrases = [phrase.strip() for phrase in args.prompts.split("^")]
-
-    # Make a list of all phrases
-    all_phrases = []
-    for phrase in story_phrases:
-        all_phrases.append(phrase.split("|"))
-
-    # First phrase
-    args.prompts = all_phrases[0]
-
-# Split target images using the pipe character (weights are split later)
-if args.image_prompts:
-    args.image_prompts = args.image_prompts.split("|")
-    args.image_prompts = [image.strip() for image in args.image_prompts]
-
 
 # Fallback to CPU if CUDA is not found and make sure GPU video rendering is also disabled
 # NB. May not work for AMD cards?
@@ -647,6 +629,24 @@ def gen_image(args, getOutputName):
         clip.load(args.clip_model, jit=jit)[0].eval().requires_grad_(False).to(device)
     )
 
+    # Split text prompts using the pipe character (weights are split later)
+    if args.prompts:
+        # For stories, there will be many phrases
+        story_phrases = [phrase.strip() for phrase in args.prompts.split("^")]
+
+        # Make a list of all phrases
+        all_phrases = []
+        for phrase in story_phrases:
+            all_phrases.append(phrase.split("|"))
+
+        # First phrase
+        args.prompts = all_phrases[0]
+
+    # Split target images using the pipe character (weights are split later)
+    if args.image_prompts:
+        args.image_prompts = args.image_prompts.split("|")
+        args.image_prompts = [image.strip() for image in args.image_prompts]
+
     # Vector quantize
     def synth(z):
         if gumbel:
@@ -667,7 +667,8 @@ def gen_image(args, getOutputName):
         out = synth(z)
         info = PngImagePlugin.PngInfo()
         info.add_text("comment", f"{args.prompts}")
-        TF.to_pil_image(out[0].cpu()).save(getOutputName(), pnginfo=info)
+        if i > 0:
+            TF.to_pil_image(out[0].cpu()).save(getOutputName(i), pnginfo=info)
 
     # Set the optimiser
     def get_opt(opt_name, opt_lr):
@@ -955,13 +956,12 @@ def main():
                     ("Prompt3", row["Prompt3"]),
                 ]:
                     if prompt and modifier:
-                        count = 0
-                        def get_output_name():
-                            nonlocal count
-                            count += 1
+                        def get_output_name(iter):
                             return "imageoutput/{}/{}/{}{}_{}.png".format(
-                                args.color, card_dir_name, name, copy, count
+                                args.color, card_dir_name, name, copy, iter
                             )
+
+                        thisargs.prompts = prompt + " | " + modifier                        
 
                         gen_image(
                             thisargs,
