@@ -957,7 +957,7 @@ def loop_sheet(sheet_name):
                     ("Prompt2", row["Prompt2"]),
                     ("Prompt3", row["Prompt3"]),
                 ]:
-                    if prompt and modifier:
+                    if prompt and modifier and not math.isnan(prompt) and not math.isnan(modifier):
                         def get_output_name(iter):
                             return "imageoutput/{}/{}/{}{}_{}.png".format(
                                 sheet_name, card_dir_name, name, copy, iter
