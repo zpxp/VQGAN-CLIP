@@ -69,10 +69,10 @@ vq_parser = argparse.ArgumentParser(description="Image generation using VQGAN+CL
 # Add the arguments
 
 # Add the arguments
-vq_parser.add_argument("-cl",   "--color", type=str, help="Card color", default=None, required=True, dest="color",)
 vq_parser.add_argument("-ss",   "--spreadsheet", type=str, help="Spreadsheet to parse", default=None, required=True, dest='spreadsheet')
 vq_parser.add_argument("-cp",   "--copies", type=str, help="Num times to gen each combination of prompts", default=2, dest='copies')
 vq_parser.add_argument("-p",    "--prompts", type=str, help="Text prompts", default=None, dest='prompts')
+vq_parser.add_argument("-ov",    "--overwrite", type=str, help="Overwrite existing imgs", default=False, dest='overwrite')
 vq_parser.add_argument("-ip",   "--image_prompts", type=str, help="Image prompts / target image", default=[], dest='image_prompts')
 vq_parser.add_argument("-i",    "--iterations", type=int, help="Number of iterations", default=500, dest='max_iterations')
 vq_parser.add_argument("-se",   "--save_every", type=int, help="Save image iterations", default=50, dest='display_freq')
@@ -918,10 +918,10 @@ def gen_image(args, getOutputName):
             pbar.update()
 
 
-def main():
-    Path("imageoutput/{}".format(args.color)).mkdir(parents=True, exist_ok=True)
+def loop_sheet(sheet_name):
+    Path("imageoutput/{}".format(sheet_name)).mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_excel(args.spreadsheet, engine="odf")
+    df = pd.read_excel(args.spreadsheet, sheet_name=sheet_name, engine="odf")
     df = df.reset_index()  # make sure indexes pair with number of rows
     # Name	Description	Prompt1	Prompt2	Prompt3	NumIters	Modifiers	Modifiers2
     for index, row in df.iterrows():
@@ -944,9 +944,11 @@ def main():
             thisargs.step_size = float(lr)
 
         card_dir_name = re.sub(r"[^a-zA-Z]+", "_",  row["Name"])
-        Path("imageoutput/{}/{}".format(args.color, card_dir_name)).mkdir(parents=True, exist_ok=True)
+        Path("imageoutput/{}/{}".format(sheet_name, card_dir_name)).mkdir(parents=True, exist_ok=True)
         
         for copy in range(thisargs.copies):
+            if copy == 1:
+                thisargs.step_size = 0.1
             for modifier in [row["Modifiers"], row["Modifiers2"]]:
                 for name, prompt in [
                     ("Name", row["Name"]),
@@ -958,8 +960,11 @@ def main():
                     if prompt and modifier:
                         def get_output_name(iter):
                             return "imageoutput/{}/{}/{}{}_{}.png".format(
-                                args.color, card_dir_name, name, copy, iter
+                                sheet_name, card_dir_name, name, copy, iter
                             )
+                        
+                        if Path(get_output_name(thisargs.max_iterations)).exists() and not args.overwrite:
+                            continue
 
                         thisargs.prompts = prompt + " | " + modifier                        
 
@@ -968,6 +973,11 @@ def main():
                             get_output_name,
                         )
 
+def main():
+    sheets = ["Yellow"]
+    # sheets = ["Yellow", "Green", "Blue", "Red", "Black", "Colorless"]
+    for c in sheets:
+        loop_sheet(c)
 
 if __name__ == "__main__":
     try:
