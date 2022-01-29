@@ -62,6 +62,7 @@ vq_parser.add_argument("-i",    "--iterations", type=int, help="Number of iterat
 vq_parser.add_argument("-se",   "--save_every", type=int, help="Save image iterations", default=50, dest='display_freq')
 vq_parser.add_argument("-s",    "--size", nargs=2, type=int, help="Image size (width height) (default: %(default)s)", default=[default_image_size,default_image_size], dest='size')
 vq_parser.add_argument("-ii",   "--init_image", type=str, help="Initial image", default=None, dest='init_image')
+vq_parser.add_argument("-et",   "--enable_tweaks", action="store_true", help="Break on image output interval to allow tweaks", dest="enable_tweaks")
 vq_parser.add_argument("-in",   "--init_noise", type=str, help="Initial noise image (pixels or gradient)", default=None, dest='init_noise')
 vq_parser.add_argument("-iw",   "--init_weight", type=float, help="Initial weight", default=0., dest='init_weight')
 vq_parser.add_argument("-m",    "--clip_model", type=str, help="CLIP model (e.g. ViT-B/32, ViT-B/16)", default='ViT-B/32', dest='clip_model')
@@ -861,6 +862,21 @@ try:
             # Training time
             train(i)
             
+            if args.enable_tweaks and i % args.display_freq == 0:
+                print(f"Modify {args.output} and press Y, Enter, or just Enter if no change made")
+                y = input()
+                if y == 'Y':
+                  img = Image.open(args.output)
+                  pil_image = img.convert('RGB')
+                  pil_image = pil_image.resize((sideX, sideY), Image.LANCZOS)
+                  pil_tensor = TF.to_tensor(pil_image)
+                  z, *_ = model.encode(pil_tensor.to(device).unsqueeze(0) * 2 - 1)
+                  z_orig = z.clone()
+                  z.requires_grad_(True)
+                  # resetOptimizer = True
+                  opt = get_opt(args.optimiser, args.step_size)
+
+
             # Ready to stop yet?
             if i == args.max_iterations:
                 if not args.video_style_dir:
