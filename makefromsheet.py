@@ -952,7 +952,7 @@ def loop_sheet(sheet_name):
             for modifier in [row["Modifiers"], row["Modifiers2"]]:
                 for name, prompt in [
                     ("Name", row["Name"]),
-                    ("Description", row["Description"]),
+                    ("Description", re.sub(r"(^|\.).*?:", " ", row["Description"])),
                     ("Prompt1", row["Prompt1"]),
                     ("Prompt2", row["Prompt2"]),
                     ("Prompt3", row["Prompt3"]),
