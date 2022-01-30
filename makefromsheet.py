@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import re
+import glob
 
 import argparse
 import math
@@ -104,9 +105,6 @@ vq_parser.add_argument("-cd",   "--cuda_device", type=str, help="Cuda device to 
 
 # Execute the parse_args() method
 args = vq_parser.parse_args()
-
-if not args.prompts and not args.image_prompts:
-    args.prompts = "A cute, smiling, Nerdy Rodent"
 
 if args.cudnn_determinism:
     torch.backends.cudnn.deterministic = True
@@ -944,25 +942,35 @@ def loop_sheet(sheet_name):
         )
         numiters = (row["NumIters"])
         lr = (row["LearnRate"])
-        thisargs = argparse.Namespace(**vars(args))
+        rowargs = argparse.Namespace(**vars(args))
         if numiters and not isNaN(numiters):
-            thisargs.max_iterations = int(numiters)
+            rowargs.max_iterations = int(numiters)
         if lr and not isNaN(lr):
-            thisargs.step_size = float(lr)
+            rowargs.step_size = float(lr)
+
+        def get_image_dir():
+            return "imageoutput/{}/{}".format(
+                    sheet_name, card_dir_name, 
+                )
 
         card_dir_name = re.sub(r"[^a-zA-Z]+", "_",  row["Name"])
-        Path("imageoutput/{}/{}".format(sheet_name, card_dir_name)).mkdir(parents=True, exist_ok=True)
+        Path(get_image_dir()).mkdir(parents=True, exist_ok=True)
         
-        for copy in range(thisargs.copies):
+        for copy in range(rowargs.copies):
+            thisargs = argparse.Namespace(**vars(rowargs))
             if copy == 1:
                 thisargs.step_size = 0.15
+
+            def get_input_imgs():
+                return glob.glob(get_image_dir()+"/input*")
+
             for modifier in [row["Modifiers"], row["Modifiers2"]]:
                 for name, prompt in [
                     ("Name", row["Name"]),
                     # ("Description", re.sub(r"(^|\.).*?:", " ", row["Description"])),
                     ("Prompt1", row["Prompt1"]),
                     ("Prompt2", row["Prompt2"]),
-                    ("Prompt3", row["Prompt3"]),
+                    ("Prompt3", row["Prompt3"])
                 ]:
                     if prompt and modifier and not isNaN(prompt) and not isNaN(modifier):
                         def get_output_name(iter):
@@ -973,7 +981,10 @@ def loop_sheet(sheet_name):
                         if Path(get_output_name(thisargs.max_iterations)).exists() and not args.overwrite:
                             continue
 
-                        thisargs.prompts = prompt + " | " + modifier                        
+                        thisargs.prompts = prompt + " | " + modifier         
+                        input_imgs = get_input_imgs()                                
+                        if input_imgs and len(input_imgs) > 0:
+                            thisargs.image_prompts = "|".join(map(lambda x: x+":0.5", input_imgs))
 
                         gen_image(
                             thisargs,
@@ -981,12 +992,13 @@ def loop_sheet(sheet_name):
                         )
 
 def main():
-    sheets = ["Yellow"]
-    # sheets = ["Yellow", "Green", "Blue", "Red", "Black", "Colorless"]
+    # sheets = ["Yellow"]
+    sheets = ["Yellow", "Green", "Blue", "Red", "Black", "Colorless"]
     for c in sheets:
         loop_sheet(c)
 
 if __name__ == "__main__":
+    print("Starting")
     try:
         main()
     except KeyboardInterrupt:
