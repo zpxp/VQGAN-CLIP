@@ -929,6 +929,9 @@ def loop_sheet(sheet_name):
     df = df.reset_index()  # make sure indexes pair with number of rows
     # Name	Description	Prompt1	Prompt2	Prompt3	NumIters	Modifiers	Modifiers2
     for index, row in df.iterrows():
+        if isNaN(row["Name"]):
+            continue
+        
         print(
             row["Name"],
             row["Description"],
