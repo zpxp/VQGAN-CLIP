@@ -931,7 +931,7 @@ def loop_sheet(sheet_name):
     for index, row in df.iterrows():
         if isNaN(row["Name"]):
             continue
-        
+
         print(
             row["Name"],
             row["Description"],
@@ -955,11 +955,11 @@ def loop_sheet(sheet_name):
         
         for copy in range(thisargs.copies):
             if copy == 1:
-                thisargs.step_size = 0.1
+                thisargs.step_size = 0.15
             for modifier in [row["Modifiers"], row["Modifiers2"]]:
                 for name, prompt in [
                     ("Name", row["Name"]),
-                    ("Description", re.sub(r"(^|\.).*?:", " ", row["Description"])),
+                    # ("Description", re.sub(r"(^|\.).*?:", " ", row["Description"])),
                     ("Prompt1", row["Prompt1"]),
                     ("Prompt2", row["Prompt2"]),
                     ("Prompt3", row["Prompt3"]),
