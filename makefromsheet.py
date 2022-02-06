@@ -964,7 +964,7 @@ def loop_sheet(sheet_name):
             def get_input_imgs():
                 return glob.glob(get_image_dir()+"/input*")
 
-            for modifier in [row["Modifiers"], row["Modifiers2"]]:
+            for mi, modifier in enumerate([row["Modifiers"], row["Modifiers2"]]):
                 for name, prompt in [
                     ("Name", row["Name"]),
                     # ("Description", re.sub(r"(^|\.).*?:", " ", row["Description"])),
@@ -974,8 +974,8 @@ def loop_sheet(sheet_name):
                 ]:
                     if prompt and modifier and not isNaN(prompt) and not isNaN(modifier):
                         def get_output_name(iter):
-                            return "imageoutput/{}/{}/{}{}_{}.png".format(
-                                sheet_name, card_dir_name, name, copy, iter
+                            return "imageoutput/{}/{}/{}_{}m{}_{}.png".format(
+                                sheet_name, card_dir_name, name, copy, mi, iter
                             )
                         
                         if Path(get_output_name(thisargs.max_iterations)).exists() and not args.overwrite:
@@ -992,7 +992,7 @@ def loop_sheet(sheet_name):
                         )
 
 def main():
-    # sheets = ["Yellow"]
+   #  sheets = ["Black"]
     sheets = ["Yellow", "Green", "Blue", "Red", "Black", "Colorless"]
     for c in sheets:
         loop_sheet(c)
