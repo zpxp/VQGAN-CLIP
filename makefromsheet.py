@@ -70,6 +70,7 @@ vq_parser = argparse.ArgumentParser(description="Image generation using VQGAN+CL
 
 # Add the arguments
 vq_parser.add_argument("-ss",   "--spreadsheet", type=str, help="Spreadsheet to parse", default=None, required=True, dest='spreadsheet')
+vq_parser.add_argument("-on",   "--only",nargs='+', type=str, help="Only output these card names", default=[], required=False, dest='only')
 vq_parser.add_argument("-cp",   "--copies", type=str, help="Num times to gen each combination of prompts", default=2, dest='copies')
 vq_parser.add_argument("-p",    "--prompts", type=str, help="Text prompts", default=None, dest='prompts')
 vq_parser.add_argument("-ov",    "--overwrite", type=str, help="Overwrite existing imgs", default=False, dest='overwrite')
@@ -929,6 +930,9 @@ def loop_sheet(sheet_name):
     for index, row in df.iterrows():
         if isNaN(row["Name"]):
             continue
+
+        if len(args.only) and not any(row["Name"].lower().strip() == x.lower().strip() for x in args.only ):
+           continue
 
         print(
             row["Name"],
